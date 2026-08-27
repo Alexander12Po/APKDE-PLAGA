@@ -1,0 +1,203 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Compilar Agrowillay (APK) en Google Colab\n",
+    "\n",
+    "Este notebook clona tu repositorio de GitHub, instala Buildozer y todas las\n",
+    "dependencias del sistema, compila el APK y lo deja listo para descargar.\n",
+    "\n",
+    "**Antes de empezar:** sube tu proyecto (main.py, buildozer.spec, assets/) a\n",
+    "un repositorio de GitHub. No subas ningun archivo `config.json` ni claves\n",
+    "de API.\n",
+    "\n",
+    "Ejecuta las celdas en orden, de arriba hacia abajo."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 1) Clonar tu repositorio de GitHub\n",
+    "REPO_URL = \"https://github.com/Alexander12Po/APKDE-PLAGA.git\"\n",
+    "PROJECT_DIR = \"APKDE-PLAGA\"\n",
+    "\n",
+    "!git clone {REPO_URL} {PROJECT_DIR}\n",
+    "%cd {PROJECT_DIR}\n",
+    "!ls -la"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 2) Instalar dependencias del sistema\n",
+    "\n",
+    "Buildozer necesita Java, herramientas de compilacion de Android, y varias librerias de sistema Linux."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%bash\n",
+    "set -e\n",
+    "\n",
+    "apt-get update -qq\n",
+    "apt-get install -y -qq \\\n",
+    "    openjdk-17-jdk \\\n",
+    "    autoconf \\\n",
+    "    automake \\\n",
+    "    libtool \\\n",
+    "    pkg-config \\\n",
+    "    zlib1g-dev \\\n",
+    "    libncurses5-dev \\\n",
+    "    libncursesw5-dev \\\n",
+    "    libtinfo5 \\\n",
+    "    cmake \\\n",
+    "    libffi-dev \\\n",
+    "    libssl-dev \\\n",
+    "    unzip \\\n",
+    "    zip \\\n",
+    "    build-essential \\\n",
+    "    ccache \\\n",
+    "    git\n",
+    "\n",
+    "echo \"Dependencias del sistema instaladas.\"\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 3) Instalar Buildozer y Cython\n",
+    "!pip install --upgrade pip\n",
+    "!pip install buildozer cython==0.29.36\n",
+    "!buildozer version"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 4) Configurar variables de entorno de Java\n",
+    "\n",
+    "Colab a veces trae varias versiones de Java; forzamos la que necesita el\n",
+    "Android SDK/NDK."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import os\n",
+    "os.environ[\"JAVA_HOME\"] = \"/usr/lib/jvm/java-17-openjdk-amd64\"\n",
+    "os.environ[\"PATH\"] = os.environ[\"JAVA_HOME\"] + \"/bin:\" + os.environ[\"PATH\"]\n",
+    "!java -version"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 5) Compilar el APK\n",
+    "\n",
+    "Esto puede tardar entre 15 y 40 minutos la primera vez (descarga el\n",
+    "Android SDK/NDK completos). Las siguientes compilaciones son mas rapidas\n",
+    "porque Buildozer cachea el SDK/NDK en `.buildozer/`.\n",
+    "\n",
+    "**Importante:** si la sesion de Colab se desconecta, vuelve a ejecutar las\n",
+    "celdas desde el paso 1 (o desde el paso 4 si `.buildozer/` sigue en disco)."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%cd /content/{PROJECT_DIR}\n",
+    "!yes | buildozer -v android debug"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 6) Ubicar y descargar el APK compilado\n",
+    "\n",
+    "El archivo queda dentro de la carpeta `bin/`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import glob\n",
+    "apk_files = glob.glob(\"bin/*.apk\")\n",
+    "print(\"APK generado:\", apk_files)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from google.colab import files\n",
+    "\n",
+    "if apk_files:\n",
+    "    files.download(apk_files[0])\n",
+    "else:\n",
+    "    print(\"No se encontro ningun APK. Revisa el log de buildozer arriba para ver el error de compilacion.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Notas y solucion de problemas\n",
+    "\n",
+    "- **\"license not accepted\"**: agrega `android.accept_sdk_license = True`\n",
+    "  en `buildozer.spec` (ya viene configurado en el archivo de este proyecto).\n",
+    "- **Se corta la sesion de Colab a mitad de la compilacion**: Colab\n",
+    "  desconecta sesiones inactivas. Mantene la pestaña activa o usa Colab Pro\n",
+    "  para sesiones mas largas. Puedes volver a correr `buildozer -v android debug`\n",
+    "  y retomara desde donde quedo el cache.\n",
+    "- **Cambios en el codigo**: si editas `main.py` en GitHub, vuelve a\n",
+    "  clonar el repo (paso 1) o haz `git pull` dentro de la carpeta del\n",
+    "  proyecto antes de volver a compilar.\n",
+    "- **Version release (para subir a Play Store)**: reemplaza el comando del\n",
+    "  paso 5 por `buildozer -v android release` y luego firma el APK/AAB\n",
+    "  con tu keystore (fuera del alcance de este notebook).\n"
+   ]
+  }
+ ],
+ "metadata": {
+  "colab": {
+   "provenance": [],
+   "name": "colab_build_apk.ipynb"
+  },
+  "kernelspec": {
+   "name": "python3",
+   "display_name": "Python 3"
+  },
+  "language_info": {
+   "name": "python"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
