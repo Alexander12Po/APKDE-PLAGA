@@ -26,8 +26,8 @@ requirements = python3,kivy==2.3.0,kivymd==1.2.0,requests,pillow,plyer,certifi,u
 # ---------------------------------------------------------------------------
 # Coloca tu icono en assets/icon.png (recomendado 512x512, PNG con fondo)
 # y tu splash en assets/presplash.png (recomendado 1080x1920 o similar).
-icon.filename = %(source.dir)s/assets/icon.png
-presplash.filename = %(source.dir)s/assets/presplash.png
+icon.filename = %(source.dir)s/icon.png
+presplash.filename = %(source.dir)s/presplash.png
 
 # Color de fondo del splash mientras carga (formato: R,G,B,A entre 0 y 1)
 android.presplash_color = #0F6B4E
